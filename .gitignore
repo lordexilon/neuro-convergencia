@@ -1,0 +1,14 @@
+# Public repository contains the product frontend only.
+/*
+!/.gitignore
+!/README.md
+!/app/
+**/node_modules/
+**/.next/
+**/.env*
+**/.vercel/
+**/out/
+**/coverage/
+**/*.log
+**/*.pem
+**/*.key
