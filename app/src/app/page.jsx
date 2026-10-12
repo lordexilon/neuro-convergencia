@@ -55,6 +55,27 @@ export default function Journal() {
     let alive=true;
     setEntries([]);setHistoryError('');
     if(!session) return ()=>{alive=false;};
+
+    // If there is pending onboarding data in localStorage, sync it to user_profiles
+    if (typeof window !== 'undefined') {
+      try {
+        const stored = localStorage.getItem('neuro_onboarding_temp');
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          productClient().from('user_profiles').upsert({
+            id: session.user.id,
+            initial_battery: parsed.initial_battery,
+            polarity: parsed.polarity,
+            primary_layer: parsed.primary_layer || null,
+            onboarding_completed: true,
+            updated_at: new Date().toISOString()
+          }).then(() => {
+            localStorage.removeItem('neuro_onboarding_temp');
+          }).catch(() => {});
+        }
+      } catch {}
+    }
+
     productClient().from('journal_entries').select('*').eq('owner_id',session.user.id).order('created_at',{ascending:false}).order('id',{ascending:false}).limit(20)
       .then(({data,error})=>{if(alive){if(error)setHistoryError('No se pudo recuperar el historial.');else setEntries(data);}});
     return ()=>{alive=false;};
@@ -134,6 +155,7 @@ export default function Journal() {
       <OnboardingFlow
         onComplete={()=>setView('journal')}
         onSkip={()=>setView('journal')}
+        session={session}
       />
     ) : (
       <>

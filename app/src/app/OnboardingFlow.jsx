@@ -13,7 +13,7 @@ const mockScenarios = [
   }
 ];
 
-export default function OnboardingFlow({onComplete, onSkip}) {
+export default function OnboardingFlow({onComplete, onSkip, session}) {
   const [step, setStep] = useState(1);
   const [energyLevel, setEnergyLevel] = useState(50);
   const [polarity, setPolarity] = useState('activo');
@@ -23,8 +23,28 @@ export default function OnboardingFlow({onComplete, onSkip}) {
   const [sendingLink, setSendingLink] = useState(false);
   const [authMessage, setAuthMessage] = useState('');
   const [linkSent, setLinkSent] = useState(false);
+  const [savedProfile, setSavedProfile] = useState(false);
 
   const scenario = mockScenarios[0];
+
+  // Save profile to Supabase if authenticated
+  async function persistProfile(userId) {
+    try {
+      const client = productClient();
+      if (!client || !userId) return;
+      await client.from('user_profiles').upsert({
+        id: userId,
+        initial_battery: energyLevel,
+        polarity,
+        primary_layer: observedLayer || null,
+        onboarding_completed: true,
+        updated_at: new Date().toISOString()
+      });
+      setSavedProfile(true);
+    } catch {
+      // Non-blocking fallback
+    }
+  }
 
   async function handleRegister(e) {
     e.preventDefault();
@@ -32,6 +52,22 @@ export default function OnboardingFlow({onComplete, onSkip}) {
     setSendingLink(true);
     setAuthMessage('');
     try {
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('neuro_onboarding_temp', JSON.stringify({
+          initial_battery: energyLevel,
+          polarity,
+          primary_layer: observedLayer,
+          date: new Date().toISOString()
+        }));
+      }
+
+      if (session?.user?.id) {
+        await persistProfile(session.user.id);
+        setAuthMessage('¡Perfil guardado correctamente en tu cuenta!');
+        setLinkSent(true);
+        return;
+      }
+
       const client = productClient();
       if (!client) throw new Error('Servicio de autenticación no disponible.');
       const {error} = await client.auth.signInWithOtp({
@@ -313,11 +349,11 @@ export default function OnboardingFlow({onComplete, onSkip}) {
               </div>
             </div>
 
-            {/* Formulario de Registro por Correo */}
+            {/* Formulario de Registro o Confirmación de Perfil */}
             <div className="onboarding-auth-box">
-              <h3>Crea o accede a tu cuenta privada</h3>
+              <h3>{session ? 'Vincular a tu cuenta activa' : 'Crea o accede a tu cuenta privada'}</h3>
               <p className="auth-note">
-                Acceso seguro por enlace de correo, sin contraseñas que recordar.
+                {session ? `Sesión iniciada como: ${session.user.email}` : 'Acceso seguro por enlace de correo, sin contraseñas que recordar.'}
               </p>
 
               {linkSent ? (
@@ -325,6 +361,15 @@ export default function OnboardingFlow({onComplete, onSkip}) {
                   <p>✓ {authMessage}</p>
                   <button type="button" className="primary" onClick={onComplete}>
                     Continuar a la Bitácora
+                  </button>
+                </div>
+              ) : session ? (
+                <div style={{ marginTop: '1rem', display: 'flex', gap: '0.75rem' }}>
+                  <button type="button" className="primary" onClick={handleRegister} disabled={sendingLink}>
+                    {sendingLink ? 'Guardando perfil...' : 'Guardar Perfil de Onboarding'}
+                  </button>
+                  <button type="button" className="secondary" onClick={onComplete}>
+                    Omitir e ir a la Bitácora
                   </button>
                 </div>
               ) : (
