@@ -1,6 +1,9 @@
 'use client';
 
-import {useRef, useState} from 'react';
+import {useCallback,useEffect,useRef,useState} from 'react';
+import AccountPanel from './AccountPanel';
+import {productClient} from '../lib/supabase';
+import {buildJournal} from '../lib/journal-record.cjs';
 
 const reactivityOptions = [
   {id:'impulso',label:'Impulso de Supervivencia (Ataque/Huida)',description:'Reacción física, rápida, defensiva o impositiva.',tone:'red'},
@@ -31,6 +34,27 @@ export default function Journal() {
   const [step,setStep]=useState(1);
   const [data,setData]=useState(empty);
   const [review,setReview]=useState(false);
+  const [session,setSession]=useState(null);
+  const [entries,setEntries]=useState([]);
+  const [historyError,setHistoryError]=useState('');
+  const [saveError,setSaveError]=useState('');
+  const [saving,setSaving]=useState(false);
+  const [saved,setSaved]=useState(false);
+  const recordId=useRef(null);
+  const ownerRef=useRef(null);
+  const receiveSession=useCallback((next)=>{
+    if(ownerRef.current&&ownerRef.current!==next?.user.id){setData(empty());setStep(1);setReview(false);setSaved(false);recordId.current=null;}
+    ownerRef.current=next?.user.id||null;
+    setSession(next);
+  },[]);
+  useEffect(()=>{
+    let alive=true;
+    setEntries([]);setHistoryError('');
+    if(!session) return ()=>{alive=false;};
+    productClient().from('journal_entries').select('*').eq('owner_id',session.user.id).order('created_at',{ascending:false}).order('id',{ascending:false}).limit(20)
+      .then(({data,error})=>{if(alive){if(error)setHistoryError('No se pudo recuperar el historial.');else setEntries(data);}});
+    return ()=>{alive=false;};
+  },[session]);
   const titleRef=useRef(null);
   const setField=(field,value)=>setData(previous=>({...previous,[field]:value}));
   const go=(next)=>{setStep(next);requestAnimationFrame(()=>titleRef.current?.focus());};
@@ -44,17 +68,40 @@ export default function Journal() {
     if(step<3) go(step+1);
     else {setReview(true);requestAnimationFrame(()=>titleRef.current?.focus());}
   }
+  async function save() {
+    if(saving||saved||!session) return;
+    setSaving(true);setSaveError('');
+    const owner=session.user.id;
+    try {
+      recordId.current ||= crypto.randomUUID();
+      const payload=buildJournal(data,owner,recordId.current);
+      const client=productClient();
+      let response=await client.from('journal_entries').insert(payload).select().single();
+      if(response.error?.code==='23505') {
+        response=await client.from('journal_entries').select('*').eq('id',payload.id).eq('owner_id',owner).single();
+        if(response.data&&Object.keys(payload).some(key=>JSON.stringify(response.data[key])!==JSON.stringify(payload[key])))
+          throw new Error('El intento anterior guardó una versión distinta. Revisa el historial antes de crear otro registro.');
+      }
+      if(response.error||!response.data) throw new Error('No se pudo guardar. Tu reflexión sigue aquí; puedes reintentar.');
+      if(ownerRef.current!==owner) return;
+      setSaved(true);
+      setEntries(previous=>[response.data,...previous.filter(entry=>entry.id!==response.data.id)].slice(0,20));
+    } catch(error) {if(ownerRef.current===owner)setSaveError(error.message||'No se pudo guardar. Puedes reintentar.');}
+    finally {setSaving(false);}
+  }
   return <main className="shell">
     <header className="brand"><span className="brand-mark" aria-hidden="true">◌</span><span>NEURO <strong>CONVERGENCIA</strong></span><span className="edition">BITÁCORA PERSONAL</span></header>
     <div className="intro"><p className="eyebrow">UN MOMENTO PARA TI</p><h1>Haz una pausa.<br/><span>Encuentra tu centro.</span></h1><p>Observa lo que pasó y elige cómo quieres responder.</p></div>
+    <AccountPanel onSession={receiveSession}/>
     <section className="journal" aria-label="Registro guiado">
       <div className="progress-header"><span>Registro del momento</span><span>{review?'Revisión':`Paso ${step} de 3`}</span></div>
       <ol className="steps" aria-label="Progreso">{['Observar','Reconocer','Responder'].map((label,index)=><li key={label} aria-current={!review&&step===index+1?'step':undefined} className={step>=index+1?'reached':''}><span>{index+1}</span>{label}</li>)}</ol>
       <div className="content">
         {review?<>
-          <p className="eyebrow">TU RESPUESTA, CON CLARIDAD</p><h2 ref={titleRef} tabIndex={-1}>Revisa tu reflexión</h2><p className="hint" role="status">Este borrador aún no está guardado. La persistencia se habilitará en la siguiente etapa.</p>
+          <p className="eyebrow">TU RESPUESTA, CON CLARIDAD</p><h2 ref={titleRef} tabIndex={-1}>{saved?'Reflexión guardada':'Revisa tu reflexión'}</h2><p className="hint" role="status">{saved?'Tu registro está guardado en tu bitácora privada.':session?'Todavía no está guardado. Revisa los datos antes de confirmar.':'Este borrador aún no está guardado. Accede por correo para habilitar el guardado.'}</p>
           <dl className="review"><div><dt>Detonante</dt><dd>{data.context}</dd></div><div><dt>Energía percibida</dt><dd>{data.battery}%</dd></div><div><dt>Nivel de Reactividad</dt><dd>{selectedReaction?.label}</dd></div><div><dt>Filtro de Sesgo</dt><dd>{selectedBias?.label}</dd></div><div><dt>Foco de Desequilibrio</dt><dd>{data.tags.length?tags.filter(([id])=>data.tags.includes(id)).map(([,label])=>label).join(' · '):'Sin etiquetas seleccionadas'}</dd></div>{phases.map(([field,label])=><div key={field}><dt>{label}</dt><dd>{data[field]}</dd></div>)}{data.learning.trim()&&<div><dt>Integración y Crecimiento</dt><dd>{data.learning}</dd></div>}</dl>
-          <div className="actions"><button type="button" className="secondary" onClick={()=>{setReview(false);go(3);}}>Seguir editando</button></div>
+          {saveError&&<p role="alert" className="hint">{saveError}</p>}
+          <div className="actions">{saved?<button className="primary" type="button" onClick={()=>{setData(empty());setSaved(false);setReview(false);recordId.current=null;setSaveError('');go(1);}}>Nuevo registro</button>:<><button type="button" className="secondary" disabled={saving} onClick={()=>{setReview(false);go(3);}}>Seguir editando</button><button type="button" className="primary" disabled={!session||saving} onClick={save}>{saving?'Guardando…':'Guardar registro'}</button></>}</div>
         </>:<form onSubmit={advance}>
           <p className="eyebrow">{step===1?'EMPIEZA POR LO QUE VIVISTE':step===2?'SIN JUICIO, SOLO OBSERVACIÓN':'UNA PEQUEÑA ELECCIÓN CONSCIENTE'}</p>
           <h2 ref={titleRef} tabIndex={-1}>{stepTitles[step-1]}</h2>
@@ -77,6 +124,7 @@ export default function Journal() {
         </form>}
       </div>
     </section>
-    <footer>Tu energía es una percepción personal. Puedes avanzar a tu ritmo.<br/><span>Borrador temporal: al recargar se pierde. Guardado pendiente de N3.</span></footer>
+    {session&&<section className="history" aria-label="Historial privado"><h2>Tu bitácora</h2><p className="hint">Últimos 20 registros guardados.</p>{historyError&&<p role="alert">{historyError}</p>}{!entries.length&&!historyError&&<p className="hint">Todavía no hay registros guardados.</p>}{entries.map(entry=><details key={entry.id}><summary><time dateTime={entry.created_at}>{new Date(entry.created_at).toLocaleString('es-PY')}</time><span>{entry.context}</span></summary><dl className="review"><div><dt>Energía percibida</dt><dd>{entry.battery}%</dd></div><div><dt>Reactividad</dt><dd>{reactivityOptions.find(option=>option.id===entry.reactivity)?.label}</dd></div><div><dt>Sesgo</dt><dd>{biasOptions.find(option=>option.id===entry.bias)?.label}</dd></div><div><dt>Focos</dt><dd>{tags.filter(([id])=>entry.tags.includes(id)).map(([,label])=>label).join(' · ')||'Sin etiquetas'}</dd></div>{phases.map(([field,label])=><div key={field}><dt>{label}</dt><dd>{entry[field]}</dd></div>)}{entry.learning&&<div><dt>Aprendizaje</dt><dd>{entry.learning}</dd></div>}</dl></details>)}</section>}
+    <footer>Tu energía es una percepción personal. Puedes avanzar a tu ritmo.<br/><span>Al recargar se pierde cualquier borrador sin guardar.</span></footer>
   </main>;
 }
