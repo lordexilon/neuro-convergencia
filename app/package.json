@@ -2,6 +2,6 @@
   "name": "neuro-convergencia-app",
   "version": "0.1.0",
   "private": true,
-  "scripts": {"dev": "next dev --webpack --hostname 127.0.0.1 --port 3108", "build": "next build --webpack", "start": "next start --hostname 127.0.0.1 --port 3108", "test":"node --test tests/journal-record.test.cjs"},
+  "scripts": {"dev": "next dev --webpack --hostname 127.0.0.1 --port 3108", "build": "next build --webpack", "start": "next start --hostname 127.0.0.1 --port 3108", "test":"node --test tests/journal-record.test.cjs tests/gamification.test.cjs"},
   "dependencies": {"@supabase/supabase-js": "2.116.0", "next": "16.3.4", "react": "19.2.8", "react-dom": "19.2.8"}
 }

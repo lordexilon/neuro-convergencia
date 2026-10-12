@@ -2,6 +2,9 @@
 
 import {useCallback,useEffect,useRef,useState} from 'react';
 import AccountPanel from './AccountPanel';
+import LandingPage from './LandingPage';
+import OnboardingFlow from './OnboardingFlow';
+import GamificationPanel from './GamificationPanel';
 import {productClient} from '../lib/supabase';
 import {buildJournal} from '../lib/journal-record.cjs';
 
@@ -31,6 +34,7 @@ const empty = () => ({context:'',battery:50,reactivity:'',bias:'',tags:[],calib1
 const stepTitles=['Observa el momento','Reconoce tu reacción','Elige tu respuesta'];
 
 export default function Journal() {
+  const [view,setView]=useState('landing');
   const [step,setStep]=useState(1);
   const [data,setData]=useState(empty);
   const [review,setReview]=useState(false);
@@ -90,41 +94,86 @@ export default function Journal() {
     finally {setSaving(false);}
   }
   return <main className="shell">
-    <header className="brand"><span className="brand-mark" aria-hidden="true">◌</span><span>NEURO <strong>CONVERGENCIA</strong></span><span className="edition">BITÁCORA PERSONAL</span></header>
-    <div className="intro"><p className="eyebrow">UN MOMENTO PARA TI</p><h1>Haz una pausa.<br/><span>Encuentra tu centro.</span></h1><p>Observa lo que pasó y elige cómo quieres responder.</p></div>
-    <AccountPanel onSession={receiveSession}/>
-    <section className="journal" aria-label="Registro guiado">
-      <div className="progress-header"><span>Registro del momento</span><span>{review?'Revisión':`Paso ${step} de 3`}</span></div>
-      <ol className="steps" aria-label="Progreso">{['Observar','Reconocer','Responder'].map((label,index)=><li key={label} aria-current={!review&&step===index+1?'step':undefined} className={step>=index+1?'reached':''}><span>{index+1}</span>{label}</li>)}</ol>
-      <div className="content">
-        {review?<>
-          <p className="eyebrow">TU RESPUESTA, CON CLARIDAD</p><h2 ref={titleRef} tabIndex={-1}>{saved?'Reflexión guardada':'Revisa tu reflexión'}</h2><p className="hint" role="status">{saved?'Tu registro está guardado en tu bitácora privada.':session?'Todavía no está guardado. Revisa los datos antes de confirmar.':'Este borrador aún no está guardado. Accede por correo para habilitar el guardado.'}</p>
-          <dl className="review"><div><dt>Detonante</dt><dd>{data.context}</dd></div><div><dt>Energía percibida</dt><dd>{data.battery}%</dd></div><div><dt>Nivel de Reactividad</dt><dd>{selectedReaction?.label}</dd></div><div><dt>Filtro de Sesgo</dt><dd>{selectedBias?.label}</dd></div><div><dt>Foco de Desequilibrio</dt><dd>{data.tags.length?tags.filter(([id])=>data.tags.includes(id)).map(([,label])=>label).join(' · '):'Sin etiquetas seleccionadas'}</dd></div>{phases.map(([field,label])=><div key={field}><dt>{label}</dt><dd>{data[field]}</dd></div>)}{data.learning.trim()&&<div><dt>Integración y Crecimiento</dt><dd>{data.learning}</dd></div>}</dl>
-          {saveError&&<p role="alert" className="hint">{saveError}</p>}
-          <div className="actions">{saved?<button className="primary" type="button" onClick={()=>{setData(empty());setSaved(false);setReview(false);recordId.current=null;setSaveError('');go(1);}}>Nuevo registro</button>:<><button type="button" className="secondary" disabled={saving} onClick={()=>{setReview(false);go(3);}}>Seguir editando</button><button type="button" className="primary" disabled={!session||saving} onClick={save}>{saving?'Guardando…':'Guardar registro'}</button></>}</div>
-        </>:<form onSubmit={advance}>
-          <p className="eyebrow">{step===1?'EMPIEZA POR LO QUE VIVISTE':step===2?'SIN JUICIO, SOLO OBSERVACIÓN':'UNA PEQUEÑA ELECCIÓN CONSCIENTE'}</p>
-          <h2 ref={titleRef} tabIndex={-1}>{stepTitles[step-1]}</h2>
-          {step===1&&<>
-            <label className="field-label" htmlFor="context">¿Qué detonó tu reacción?</label><p className="hint" id="context-help">Una frase es suficiente. Describe el momento.</p>
-            <textarea id="context" aria-describedby="context-help" required maxLength={500} rows={3} value={data.context} onChange={event=>setField('context',event.target.value)} placeholder="Ej.: me pidieron explicar un proceso en la reunión…"/>
-            <div className="energy"><div className="energy-heading"><label htmlFor="battery">Batería / Energía Actual</label><output htmlFor="battery">{data.battery}%</output></div><p className="hint">¿Cuánta energía sientes disponible ahora?</p><input id="battery" type="range" min={0} max={100} step={5} value={data.battery} onChange={event=>setField('battery',Number(event.target.value))}/><div className="range-labels"><span>Agotado · 0%</span><span>Óptimo · 100%</span></div></div>
-          </>}
-          {step===2&&<>
-            <fieldset><legend>Nivel de Reactividad</legend><p className="hint">Elige el estado que mejor describe tu reacción.</p><div className="options">{reactivityOptions.map(option=><label key={option.id} className={`option ${option.tone} ${data.reactivity===option.id?'selected':''}`}><input type="radio" name="reactivity" value={option.id} required checked={data.reactivity===option.id} onChange={()=>setField('reactivity',option.id)}/><span><strong>{option.label}</strong><small>{option.description}</small></span></label>)}</div></fieldset>
-            <fieldset><legend>Filtro de Sesgo</legend><p className="hint">¿Qué pudo influir en tu respuesta?</p><div className="options">{biasOptions.map(option=><label key={option.id} className={`option ${data.bias===option.id?'selected':''}`}><input type="radio" name="bias" value={option.id} required checked={data.bias===option.id} onChange={()=>setField('bias',option.id)}/><span><strong>{option.label}</strong><small>{option.description}</small></span></label>)}</div></fieldset>
-          </>}
-          {step===3&&<>
-            <fieldset><legend>Foco de Desequilibrio</legend><p className="hint">Selecciona los patrones que reconoces. Puedes elegir varios o continuar sin etiquetas.</p><div className="tags">{tags.map(([id,label])=><label key={id} className={`tag ${data.tags.includes(id)?'selected':''}`}><input type="checkbox" checked={data.tags.includes(id)} onChange={()=>toggleTag(id)}/>{label}</label>)}</div></fieldset>
-            <p className="reaction-note">Observaste: <strong>{selectedReaction?.label}</strong></p>
-            {phases.map(([field,label,prompt,placeholder],index)=><div key={field} className="phase"><span className="phase-number" aria-hidden="true">0{index+1}</span><div><label htmlFor={field}>{label}</label><p id={field+'-help'} className="hint">{prompt}</p><textarea id={field} required maxLength={1000} rows={2} aria-describedby={field+'-help'} value={data[field]} onChange={event=>setField(field,event.target.value)} placeholder={placeholder}/></div></div>)}
-            <label className="field-label" htmlFor="learning">Integración y Crecimiento <span className="optional">· opcional</span></label><textarea id="learning" maxLength={1000} rows={2} value={data.learning} onChange={event=>setField('learning',event.target.value)} placeholder="¿Qué te llevas de este momento?"/>
-          </>}
-          <div className="actions">{step>1&&<button type="button" className="secondary" onClick={()=>go(step-1)}>Atrás</button>}<button type="submit" className="primary" disabled={!valid}>{step===3?'Revisar reflexión':'Continuar'} <span aria-hidden="true">→</span></button></div>
-        </form>}
+    <nav className="nav-bar" aria-label="Navegación principal">
+      <div className="nav-brand">
+        <span className="brand-mark" aria-hidden="true">◌</span>
+        <span>NEURO <strong>CONVERGENCIA</strong></span>
+        <span className="edition">BITÁCORA PERSONAL</span>
       </div>
-    </section>
-    {session&&<section className="history" aria-label="Historial privado"><h2>Tu bitácora</h2><p className="hint">Últimos 20 registros guardados.</p>{historyError&&<p role="alert">{historyError}</p>}{!entries.length&&!historyError&&<p className="hint">Todavía no hay registros guardados.</p>}{entries.map(entry=><details key={entry.id}><summary><time dateTime={entry.created_at}>{new Date(entry.created_at).toLocaleString('es-PY')}</time><span>{entry.context}</span></summary><dl className="review"><div><dt>Energía percibida</dt><dd>{entry.battery}%</dd></div><div><dt>Reactividad</dt><dd>{reactivityOptions.find(option=>option.id===entry.reactivity)?.label}</dd></div><div><dt>Sesgo</dt><dd>{biasOptions.find(option=>option.id===entry.bias)?.label}</dd></div><div><dt>Focos</dt><dd>{tags.filter(([id])=>entry.tags.includes(id)).map(([,label])=>label).join(' · ')||'Sin etiquetas'}</dd></div>{phases.map(([field,label])=><div key={field}><dt>{label}</dt><dd>{entry[field]}</dd></div>)}{entry.learning&&<div><dt>Aprendizaje</dt><dd>{entry.learning}</dd></div>}</dl></details>)}</section>}
+      <div className="nav-actions">
+        <button
+          type="button"
+          className={`nav-btn ${view==='landing'?'active':''}`}
+          onClick={()=>setView('landing')}
+        >
+          🌿 El Mapa del Ser
+        </button>
+        <button
+          type="button"
+          className={`nav-btn ${view==='onboarding'?'active':''}`}
+          onClick={()=>setView('onboarding')}
+        >
+          ✨ Onboarding
+        </button>
+        <button
+          type="button"
+          className={`nav-btn ${view==='journal'?'active':''}`}
+          onClick={()=>setView('journal')}
+        >
+          📝 Bitácora {session?'Privada':''}
+        </button>
+      </div>
+    </nav>
+
+    {view==='landing' ? (
+      <LandingPage
+        onGoToJournal={()=>setView('journal')}
+        onStartOnboarding={()=>setView('onboarding')}
+      />
+    ) : view==='onboarding' ? (
+      <OnboardingFlow
+        onComplete={()=>setView('journal')}
+        onSkip={()=>setView('journal')}
+      />
+    ) : (
+      <>
+        <div className="intro"><p className="eyebrow">UN MOMENTO PARA TI</p><h1>Haz una pausa.<br/><span>Encuentra tu centro.</span></h1><p>Observa lo que pasó y elige cómo quieres responder.</p></div>
+        <AccountPanel onSession={receiveSession}/>
+        <GamificationPanel entries={entries}/>
+        <section className="journal" aria-label="Registro guiado">
+          <div className="progress-header"><span>Registro del momento</span><span>{review?'Revisión':`Paso ${step} de 3`}</span></div>
+          <ol className="steps" aria-label="Progreso">{['Observar','Reconocer','Responder'].map((label,index)=><li key={label} aria-current={!review&&step===index+1?'step':undefined} className={step>=index+1?'reached':''}><span>{index+1}</span>{label}</li>)}</ol>
+          <div className="content">
+            {review?<>
+              <p className="eyebrow">TU RESPUESTA, CON CLARIDAD</p><h2 ref={titleRef} tabIndex={-1}>{saved?'Reflexión guardada':'Revisa tu reflexión'}</h2><p className="hint" role="status">{saved?'Tu registro está guardado en tu bitácora privada.':session?'Todavía no está guardado. Revisa los datos antes de confirmar.':'Este borrador aún no está guardado. Accede por correo para habilitar el guardado.'}</p>
+              <dl className="review"><div><dt>Detonante</dt><dd>{data.context}</dd></div><div><dt>Energía percibida</dt><dd>{data.battery}%</dd></div><div><dt>Nivel de Reactividad</dt><dd>{selectedReaction?.label}</dd></div><div><dt>Filtro de Sesgo</dt><dd>{selectedBias?.label}</dd></div><div><dt>Foco de Desequilibrio</dt><dd>{data.tags.length?tags.filter(([id])=>data.tags.includes(id)).map(([,label])=>label).join(' · '):'Sin etiquetas seleccionadas'}</dd></div>{phases.map(([field,label])=><div key={field}><dt>{label}</dt><dd>{data[field]}</dd></div>)}{data.learning.trim()&&<div><dt>Integración y Crecimiento</dt><dd>{data.learning}</dd></div>}</dl>
+              {saveError&&<p role="alert" className="hint">{saveError}</p>}
+              <div className="actions">{saved?<button className="primary" type="button" onClick={()=>{setData(empty());setSaved(false);setReview(false);recordId.current=null;setSaveError('');go(1);}}>Nuevo registro</button>:<><button type="button" className="secondary" disabled={saving} onClick={()=>{setReview(false);go(3);}}>Seguir editando</button><button type="button" className="primary" disabled={!session||saving} onClick={save}>{saving?'Guardando…':'Guardar registro'}</button></>}</div>
+            </>:<form onSubmit={advance}>
+              <p className="eyebrow">{step===1?'EMPIEZA POR LO QUE VIVISTE':step===2?'SIN JUICIO, SOLO OBSERVACIÓN':'UNA PEQUEÑA ELECCIÓN CONSCIENTE'}</p>
+              <h2 ref={titleRef} tabIndex={-1}>{stepTitles[step-1]}</h2>
+              {step===1&&<>
+                <label className="field-label" htmlFor="context">¿Qué detonó tu reacción?</label><p className="hint" id="context-help">Una frase es suficiente. Describe el momento.</p>
+                <textarea id="context" aria-describedby="context-help" required maxLength={500} rows={3} value={data.context} onChange={event=>setField('context',event.target.value)} placeholder="Ej.: me pidieron explicar un proceso en la reunión…"/>
+                <div className="energy"><div className="energy-heading"><label htmlFor="battery">Batería / Energía Actual</label><output htmlFor="battery">{data.battery}%</output></div><p className="hint">¿Cuánta energía sientes disponible ahora?</p><input id="battery" type="range" min={0} max={100} step={5} value={data.battery} onChange={event=>setField('battery',Number(event.target.value))}/><div className="range-labels"><span>Agotado · 0%</span><span>Óptimo · 100%</span></div></div>
+              </>}
+              {step===2&&<>
+                <fieldset><legend>Nivel de Reactividad</legend><p className="hint">Elige el estado que mejor describe tu reacción.</p><div className="options">{reactivityOptions.map(option=><label key={option.id} className={`option ${option.tone} ${data.reactivity===option.id?'selected':''}`}><input type="radio" name="reactivity" value={option.id} required checked={data.reactivity===option.id} onChange={()=>setField('reactivity',option.id)}/><span><strong>{option.label}</strong><small>{option.description}</small></span></label>)}</div></fieldset>
+                <fieldset><legend>Filtro de Sesgo</legend><p className="hint">¿Qué pudo influir en tu respuesta?</p><div className="options">{biasOptions.map(option=><label key={option.id} className={`option ${data.bias===option.id?'selected':''}`}><input type="radio" name="bias" value={option.id} required checked={data.bias===option.id} onChange={()=>setField('bias',option.id)}/><span><strong>{option.label}</strong><small>{option.description}</small></span></label>)}</div></fieldset>
+              </>}
+              {step===3&&<>
+                <fieldset><legend>Foco de Desequilibrio</legend><p className="hint">Selecciona los patrones que reconoces. Puedes elegir varios o continuar sin etiquetas.</p><div className="tags">{tags.map(([id,label])=><label key={id} className={`tag ${data.tags.includes(id)?'selected':''}`}><input type="checkbox" checked={data.tags.includes(id)} onChange={()=>toggleTag(id)}/>{label}</label>)}</div></fieldset>
+                <p className="reaction-note">Observaste: <strong>{selectedReaction?.label}</strong></p>
+                {phases.map(([field,label,prompt,placeholder],index)=><div key={field} className="phase"><span className="phase-number" aria-hidden="true">0{index+1}</span><div><label htmlFor={field}>{label}</label><p id={field+'-help'} className="hint">{prompt}</p><textarea id={field} required maxLength={1000} rows={2} aria-describedby={field+'-help'} value={data[field]} onChange={event=>setField(field,event.target.value)} placeholder={placeholder}/></div></div>)}
+                <label className="field-label" htmlFor="learning">Integración y Crecimiento <span className="optional">· opcional</span></label><textarea id="learning" maxLength={1000} rows={2} value={data.learning} onChange={event=>setField('learning',event.target.value)} placeholder="¿Qué te llevas de este momento?"/>
+              </>}
+              <div className="actions">{step>1&&<button type="button" className="secondary" onClick={()=>go(step-1)}>Atrás</button>}<button type="submit" className="primary" disabled={!valid}>{step===3?'Revisar reflexión':'Continuar'} <span aria-hidden="true">→</span></button></div>
+            </form>}
+          </div>
+        </section>
+        {session&&<section className="history" aria-label="Historial privado"><h2>Tu bitácora</h2><p className="hint">Últimos 20 registros guardados.</p>{historyError&&<p role="alert">{historyError}</p>}{!entries.length&&!historyError&&<p className="hint">Todavía no hay registros guardados.</p>}{entries.map(entry=><details key={entry.id}><summary><time dateTime={entry.created_at}>{new Date(entry.created_at).toLocaleString('es-PY')}</time><span>{entry.context}</span></summary><dl className="review"><div><dt>Energía percibida</dt><dd>{entry.battery}%</dd></div><div><dt>Reactividad</dt><dd>{reactivityOptions.find(option=>option.id===entry.reactivity)?.label}</dd></div><div><dt>Sesgo</dt><dd>{biasOptions.find(option=>option.id===entry.bias)?.label}</dd></div><div><dt>Focos</dt><dd>{tags.filter(([id])=>entry.tags.includes(id)).map(([,label])=>label).join(' · ')||'Sin etiquetas'}</dd></div>{phases.map(([field,label])=><div key={field}><dt>{label}</dt><dd>{entry[field]}</dd></div>)}{entry.learning&&<div><dt>Aprendizaje</dt><dd>{entry.learning}</dd></div>}</dl></details>)}</section>}
+      </>
+    )}
     <footer>Tu energía es una percepción personal. Puedes avanzar a tu ritmo.<br/><span>Al recargar se pierde cualquier borrador sin guardar.</span></footer>
   </main>;
 }
