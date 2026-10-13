@@ -373,3 +373,161 @@
   background: linear-gradient(transparent, rgba(0, 0, 0, .7)); color: #fff; font-weight: 600; text-align: left;
 }
 .video-promo-note { margin-top: .5rem; font-size: .8rem; opacity: .7; text-align: center; }
+
+/* Banner y Modal del Piloto de 21 Días */
+.pilot-cta {
+  background: #3e6a52;
+  color: #ffffff;
+  border: 1px solid #2d503e;
+}
+.pilot-cta:hover {
+  background: #2d503e;
+}
+.pilot-banner-section {
+  max-width: 960px;
+  margin: 3rem auto;
+  padding: 0 1.25rem;
+}
+.pilot-banner-inner {
+  background: linear-gradient(135deg, rgba(62, 106, 82, 0.08) 0%, rgba(184, 109, 99, 0.08) 100%);
+  border: 2px dashed #3e6a52;
+  border-radius: 20px;
+  padding: 2.5rem 2rem;
+  text-align: center;
+}
+.pilot-banner-badge {
+  display: inline-block;
+  background: #3e6a52;
+  color: #fff;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 1px;
+  padding: 0.35rem 0.75rem;
+  border-radius: 999px;
+  margin-bottom: 1rem;
+}
+.pilot-banner-inner h2 {
+  font-size: 1.85rem;
+  color: #1a202c;
+  margin: 0 0 0.75rem;
+}
+.pilot-banner-inner p {
+  color: #4a5568;
+  max-width: 640px;
+  margin: 0 auto 1.5rem;
+  line-height: 1.6;
+}
+.pilot-banner-ctas {
+  display: flex;
+  justify-content: center;
+}
+.pilot-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  z-index: 1000;
+}
+.pilot-modal-card {
+  position: relative;
+  background: #ffffff;
+  width: 100%;
+  max-width: 540px;
+  border-radius: 16px;
+  padding: 2rem;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.25);
+  max-height: 90vh;
+  overflow-y: auto;
+}
+.pilot-badge {
+  display: inline-block;
+  background: #e2f1e8;
+  color: #2d503e;
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 0.25rem 0.6rem;
+  border-radius: 999px;
+  margin-bottom: 0.5rem;
+}
+.pilot-modal-header h2 {
+  margin: 0 0 0.5rem;
+  font-size: 1.5rem;
+  color: #1a202c;
+}
+.pilot-subtitle {
+  font-size: 0.9rem;
+  color: #718096;
+  margin: 0 0 1.5rem;
+  line-height: 1.4;
+}
+.role-selector {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+  margin-top: 0.5rem;
+}
+.role-option {
+  border: 2px solid #e2e8f0;
+  background: #f7fafc;
+  border-radius: 12px;
+  padding: 1rem 0.75rem;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.role-option.selected {
+  border-color: #3e6a52;
+  background: #f0f7f3;
+}
+.role-icon {
+  font-size: 1.5rem;
+  margin-bottom: 0.25rem;
+}
+.role-option strong {
+  font-size: 0.9rem;
+  color: #2d3748;
+}
+.role-option small {
+  font-size: 0.75rem;
+  color: #718096;
+  margin-top: 0.25rem;
+  line-height: 1.2;
+}
+.pilot-input, .pilot-textarea {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border: 1px solid #cbd5e0;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  font-family: inherit;
+  box-sizing: border-box;
+}
+.pilot-input:focus, .pilot-textarea:focus {
+  outline: none;
+  border-color: #3e6a52;
+  box-shadow: 0 0 0 3px rgba(62, 106, 82, 0.15);
+}
+.full-width {
+  width: 100%;
+  justify-content: center;
+}
+.pilot-success-view {
+  text-align: center;
+  padding: 2rem 1rem;
+}
+.success-icon {
+  font-size: 3rem;
+  margin-bottom: 1rem;
+}
+.success-hint {
+  font-size: 0.85rem;
+  color: #718096;
+  margin: 1rem 0 2rem;
+}

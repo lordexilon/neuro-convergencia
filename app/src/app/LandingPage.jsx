@@ -2,6 +2,7 @@
 
 import {useState} from 'react';
 import VideoPromo from './VideoPromo';
+import PilotModal from './PilotModal';
 
 const layers = [
   {
@@ -211,6 +212,7 @@ export default function LandingPage({onGoToJournal, onStartOnboarding}) {
   const [selectedPolarity, setSelectedPolarity] = useState('activo');
   const [activeSphere, setActiveSphere] = useState('personal');
   const [activeStep, setActiveStep] = useState(0);
+  const [showPilotModal, setShowPilotModal] = useState(false);
 
   const activeLayer = layers.find(l => l.id === selectedLayer) || layers[0];
   const activeSefira = sefirotData.find(s => s.id === selectedSefira) || sefirotData[2];
@@ -237,6 +239,9 @@ export default function LandingPage({onGoToJournal, onStartOnboarding}) {
           </button>
           <button type="button" className="cta-button secondary-cta" onClick={onGoToJournal}>
             <span>Abrir Bitácora de Reflexión</span>
+          </button>
+          <button type="button" className="cta-button pilot-cta" onClick={() => setShowPilotModal(true)}>
+            <span>🎯 Unirme al Piloto 21 Días</span>
           </button>
         </div>
 
@@ -524,6 +529,23 @@ export default function LandingPage({onGoToJournal, onStartOnboarding}) {
         </div>
       </section>
 
+      {/* Piloto de 21 Días Banner de Conversión */}
+      <section className="pilot-banner-section" aria-label="Convocatoria al Piloto de 21 Días">
+        <div className="pilot-banner-inner">
+          <div className="pilot-banner-badge">CONVOCATORIA ABIERTA · COHORTE 1</div>
+          <h2>Aplica el Método durante 21 Días</h2>
+          <p>
+            Buscamos 20 personas y facilitadores para transformar patrones reactivos en respuestas conscientes. Acceso gratuito guiado con herramientas pedagógicas y soporte personalizado.
+          </p>
+          <div className="pilot-banner-ctas">
+            <button type="button" className="cta-button primary-cta" onClick={() => setShowPilotModal(true)}>
+              <span>Postularme como Participante o Facilitador</span>
+              <span aria-hidden="true">→</span>
+            </button>
+          </div>
+        </div>
+      </section>
+
       {/* Bottom Conversion Section */}
       <section className="landing-footer-cta" aria-label="Llamado a la acción">
         <p className="eyebrow">EMPIEZA HOY</p>
@@ -541,6 +563,9 @@ export default function LandingPage({onGoToJournal, onStartOnboarding}) {
           </button>
         </div>
       </section>
+
+      {/* Modal de Convocatoria */}
+      <PilotModal isOpen={showPilotModal} onClose={() => setShowPilotModal(false)} />
     </div>
   );
 }
