@@ -1,6 +1,7 @@
 'use client';
 
 import {useState} from 'react';
+import VideoPromo from './VideoPromo';
 
 const layers = [
   {
@@ -238,6 +239,8 @@ export default function LandingPage({onGoToJournal, onStartOnboarding}) {
             <span>Abrir Bitácora de Reflexión</span>
           </button>
         </div>
+
+        <VideoPromo />
       </section>
 
       {/* Las 3 Capas del Ser: Formato Vertical y Espacioso */}

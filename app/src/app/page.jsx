@@ -255,6 +255,7 @@ export default function Journal() {
             <p><strong>2. Aislamiento Estricto (RLS):</strong> Utilizamos Row-Level Security en la base de datos para garantizar que solo tu usuario autenticado pueda leer e insertar registros en tu espacio.</p>
             <p><strong>3. Conservación Local de Borradores:</strong> Tu borrador en curso se almacena de forma segura en la memoria local de tu navegador para que nunca pierdas lo que escribiste si recargas o abres el enlace de acceso.</p>
             <p><strong>4. Sin Fines Publicitarios:</strong> No vendemos datos ni utilizamos tus reflexiones personales para entrenar algoritmos públicos o perfilamiento comercial.</p>
+            <p><strong>5. Contenido de Terceros (YouTube):</strong> El video de presentación se aloja en YouTube (Google) en modo de privacidad mejorada. No se carga ni se establecen cookies de YouTube hasta que decides reproducirlo.</p>
           </div>
           <div className="privacy-modal-footer">
             <button type="button" className="primary" onClick={()=>setShowPrivacy(false)}>Entendido</button>
