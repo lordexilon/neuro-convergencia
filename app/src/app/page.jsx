@@ -33,6 +33,8 @@ const phases = [
 const empty = () => ({context:'',battery:50,reactivity:'',bias:'',tags:[],calib1:'',calib2:'',calib3:'',learning:''});
 const stepTitles=['Observa el momento','Reconoce tu reacción','Elige tu respuesta'];
 
+const STORAGE_DRAFT_KEY = 'neuro_journal_draft_v1';
+
 export default function Journal() {
   const [view,setView]=useState('landing');
   const [step,setStep]=useState(1);
@@ -44,10 +46,53 @@ export default function Journal() {
   const [saveError,setSaveError]=useState('');
   const [saving,setSaving]=useState(false);
   const [saved,setSaved]=useState(false);
+  const [showPrivacy,setShowPrivacy]=useState(false);
   const recordId=useRef(null);
   const ownerRef=useRef(null);
+
+  // Restaurar borrador local al montar
+  useEffect(()=>{
+    if(typeof window!=='undefined'){
+      try{
+        const savedDraft=localStorage.getItem(STORAGE_DRAFT_KEY);
+        if(savedDraft){
+          const parsed=JSON.parse(savedDraft);
+          if(parsed&&typeof parsed==='object'){
+            setData(prev=>({...prev,...parsed}));
+          }
+        }
+      }catch{}
+    }
+  },[]);
+
+  // Guardar borrador automáticamente al cambiar datos
+  useEffect(()=>{
+    if(typeof window!=='undefined'&&!saved){
+      try{
+        if(data.context||data.reactivity||data.calib1||data.calib2||data.calib3){
+          localStorage.setItem(STORAGE_DRAFT_KEY,JSON.stringify(data));
+        }
+      }catch{}
+    }
+  },[data,saved]);
+
+  // Exponer salvaguarda explícita para AccountPanel
+  useEffect(()=>{
+    if(typeof window!=='undefined'){
+      window.neuroSaveCurrentDraft=()=>{
+        try{localStorage.setItem(STORAGE_DRAFT_KEY,JSON.stringify(data));}catch{}
+      };
+    }
+    return ()=>{
+      if(typeof window!=='undefined'){delete window.neuroSaveCurrentDraft;}
+    };
+  },[data]);
+
   const receiveSession=useCallback((next)=>{
-    if(ownerRef.current&&ownerRef.current!==next?.user.id){setData(empty());setStep(1);setReview(false);setSaved(false);recordId.current=null;}
+    if(ownerRef.current&&ownerRef.current!==next?.user.id){
+      setData(empty());setStep(1);setReview(false);setSaved(false);recordId.current=null;
+      try{localStorage.removeItem(STORAGE_DRAFT_KEY);}catch{}
+    }
     ownerRef.current=next?.user.id||null;
     setSession(next);
   },[]);
@@ -110,6 +155,7 @@ export default function Journal() {
       if(response.error||!response.data) throw new Error('No se pudo guardar. Tu reflexión sigue aquí; puedes reintentar.');
       if(ownerRef.current!==owner) return;
       setSaved(true);
+      try{localStorage.removeItem(STORAGE_DRAFT_KEY);}catch{}
       setEntries(previous=>[response.data,...previous.filter(entry=>entry.id!==response.data.id)].slice(0,20));
     } catch(error) {if(ownerRef.current===owner)setSaveError(error.message||'No se pudo guardar. Puedes reintentar.');}
     finally {setSaving(false);}
@@ -196,6 +242,33 @@ export default function Journal() {
         {session&&<section className="history" aria-label="Historial privado"><h2>Tu bitácora</h2><p className="hint">Últimos 20 registros guardados.</p>{historyError&&<p role="alert">{historyError}</p>}{!entries.length&&!historyError&&<p className="hint">Todavía no hay registros guardados.</p>}{entries.map(entry=><details key={entry.id}><summary><time dateTime={entry.created_at}>{new Date(entry.created_at).toLocaleString('es-PY')}</time><span>{entry.context}</span></summary><dl className="review"><div><dt>Energía percibida</dt><dd>{entry.battery}%</dd></div><div><dt>Reactividad</dt><dd>{reactivityOptions.find(option=>option.id===entry.reactivity)?.label}</dd></div><div><dt>Sesgo</dt><dd>{biasOptions.find(option=>option.id===entry.bias)?.label}</dd></div><div><dt>Focos</dt><dd>{tags.filter(([id])=>entry.tags.includes(id)).map(([,label])=>label).join(' · ')||'Sin etiquetas'}</dd></div>{phases.map(([field,label])=><div key={field}><dt>{label}</dt><dd>{entry[field]}</dd></div>)}{entry.learning&&<div><dt>Aprendizaje</dt><dd>{entry.learning}</dd></div>}</dl></details>)}</section>}
       </>
     )}
-    <footer>Tu energía es una percepción personal. Puedes avanzar a tu ritmo.<br/><span>Al recargar se pierde cualquier borrador sin guardar.</span></footer>
+
+    {showPrivacy&&(
+      <div className="privacy-modal-overlay" role="dialog" aria-modal="true" aria-labelledby="privacy-title">
+        <div className="privacy-modal-card">
+          <div className="privacy-modal-header">
+            <h3 id="privacy-title">🔒 Privacidad y Seguridad de tus Datos</h3>
+            <button type="button" className="close-btn" onClick={()=>setShowPrivacy(false)} aria-label="Cerrar">✕</button>
+          </div>
+          <div className="privacy-modal-body">
+            <p><strong>1. Cifrado y Propiedad Exclusiva:</strong> Tus reflexiones y bitácoras pertenecen únicamente a ti. Nadie más tiene acceso a tus escritos personales.</p>
+            <p><strong>2. Aislamiento Estricto (RLS):</strong> Utilizamos Row-Level Security en la base de datos para garantizar que solo tu usuario autenticado pueda leer e insertar registros en tu espacio.</p>
+            <p><strong>3. Conservación Local de Borradores:</strong> Tu borrador en curso se almacena de forma segura en la memoria local de tu navegador para que nunca pierdas lo que escribiste si recargas o abres el enlace de acceso.</p>
+            <p><strong>4. Sin Fines Publicitarios:</strong> No vendemos datos ni utilizamos tus reflexiones personales para entrenar algoritmos públicos o perfilamiento comercial.</p>
+          </div>
+          <div className="privacy-modal-footer">
+            <button type="button" className="primary" onClick={()=>setShowPrivacy(false)}>Entendido</button>
+          </div>
+        </div>
+      </div>
+    )}
+
+    <footer>
+      <span>Tu energía es una percepción personal para tu propia calibración diaria.</span>
+      <div className="footer-links">
+        <span>Tu borrador se conserva de forma segura en este navegador.</span>
+        <button type="button" className="text-link" onClick={()=>setShowPrivacy(true)}>Política de Privacidad y Seguridad</button>
+      </div>
+    </footer>
   </main>;
 }

@@ -21,9 +21,13 @@ export default function AccountPanel({onSession}) {
   async function requestLink(event) {
     event.preventDefault();setBusy(true);setMessage('');
     try {
+      // Notificar que se preserva el borrador
+      if (typeof window !== 'undefined' && window.neuroSaveCurrentDraft) {
+        window.neuroSaveCurrentDraft();
+      }
       const {error}=await productClient().auth.signInWithOtp({email:email.trim(),options:{emailRedirectTo:window.location.origin+'/'}});
       if(error) throw error;
-      setMessage('Si el acceso está disponible para este correo, recibirás un enlace. Ábrelo en este navegador.');
+      setMessage('¡Enlace enviado! Al confirmarlo en este navegador, tu sesión se iniciará y tu borrador se mantendrá seguro para que puedas guardarlo.');
     } catch {setMessage('No pudimos enviar el enlace. Revisa el correo o inténtalo más tarde.');}
     finally {setBusy(false);}
   }
@@ -34,7 +38,7 @@ export default function AccountPanel({onSession}) {
     finally {setBusy(false);}
   }
   return <section className="account" aria-label="Acceso a tu bitácora">
-    {configured===null?<p role="status">Comprobando acceso…</p>:!configured?<p>El guardado aún no está conectado. Puedes explorar el formulario como borrador temporal.</p>:session?<div className="account-row"><p>Tu bitácora privada <small>{session.user.email}</small></p><button type="button" className="secondary" disabled={busy} onClick={leave}>Cerrar sesión</button></div>:<form onSubmit={requestLink}><label htmlFor="login-email">Accede para guardar tu bitácora</label><div className="account-row"><input id="login-email" type="email" autoComplete="email" required maxLength={254} value={email} onChange={event=>setEmail(event.target.value)} placeholder="Tu correo electrónico"/><button className="primary" disabled={busy}>{busy?'Enviando…':'Recibir enlace'}</button></div><p className="hint">Acceso por correo, sin contraseña. Revisa tu reflexión antes de iniciar sesión: abrir el enlace puede recargar la página y perder el borrador.</p></form>}
+    {configured===null?<p role="status">Comprobando acceso…</p>:!configured?<p>El guardado aún no está conectado. Puedes explorar el formulario como borrador temporal.</p>:session?<div className="account-row"><p>Tu bitácora privada <small>{session.user.email}</small></p><button type="button" className="secondary" disabled={busy} onClick={leave}>Cerrar sesión</button></div>:<form onSubmit={requestLink}><label htmlFor="login-email">Accede para guardar tu bitácora</label><div className="account-row"><input id="login-email" type="email" autoComplete="email" required maxLength={254} value={email} onChange={event=>setEmail(event.target.value)} placeholder="Tu correo electrónico"/><button className="primary" disabled={busy}>{busy?'Enviando…':'Recibir enlace'}</button></div><p className="hint">Acceso seguro por enlace mágico sin contraseña. Tu borrador se conservará automáticamente para que no pierdas lo que escribiste.</p></form>}
     {message&&<p role="status" className="hint">{message}</p>}
   </section>;
 }

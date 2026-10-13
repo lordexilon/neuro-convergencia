@@ -226,7 +226,7 @@ export default function LandingPage({onGoToJournal, onStartOnboarding}) {
           El Mapa del <span>Neurocomportamiento</span>
         </h1>
         <p className="hero-subtitle">
-          Una tecnología de autoconocimiento y rectificación consciente. Comprende tu biología instintiva, armoniza tus emociones aprendidas y elige tu respuesta con serenidad.
+          Una micro-tecnología de autoconocimiento reflexivo. Revisa una reacción cotidiana en menos de 2 minutos, distingue hechos objetivos de interpretaciones y elige tu respuesta con serenidad consciente.
         </p>
 
         <div className="hero-cta-group">
@@ -243,10 +243,10 @@ export default function LandingPage({onGoToJournal, onStartOnboarding}) {
       {/* Las 3 Capas del Ser: Formato Vertical y Espacioso */}
       <section className="landing-section" id="capas" aria-labelledby="heading-capas">
         <div className="section-header">
-          <p className="eyebrow">ESTRUCTURA COMPORTAMENTAL & LAS 3 DIMENSIONES DEL ALMA</p>
+          <p className="eyebrow">MARCO CONCEPTUAL PEDAGÓGICO & LAS 3 DIMENSIONES DEL ALMA</p>
           <h2 id="heading-capas">Las Tres Capas del Ser</h2>
           <p className="section-desc">
-            Haz clic en los puntos interactivos de la silueta o utiliza los selectores para descubrir cómo interactúan tu cuerpo instintivo, tu corazón emocional y tu mente consciente.
+            Este esquema es un <strong>modelo pedagógico de auto-observación</strong> (no una medición clínica ni psicométrica). Los pesos representan la inercia instintiva relativa que experimentamos en situaciones de tensión, integrando la sabiduría de la Kabalá práctica con la comprensión de la reactividad humana.
           </p>
         </div>
 

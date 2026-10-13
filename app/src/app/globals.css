@@ -330,6 +330,24 @@
 
 .gamification-disclaimer{font-size:10px;color:#768a7c;text-align:center;margin:14px 0 0;font-style:italic}
 
+/* Privacy Modal & Enhanced Footer */
+.footer-links{display:flex;flex-direction:column;align-items:center;gap:6px;margin-top:6px}
+.text-link{background:transparent;border:none;color:#365b49;text-decoration:underline;font-size:11px;font-weight:600;padding:2px 6px;cursor:pointer}
+.text-link:hover{color:#1e352b}
+
+.privacy-modal-overlay{position:fixed;inset:0;background:rgba(20,35,26,0.6);backdrop-filter:blur(3px);display:grid;place-items:center;padding:20px;z-index:9999}
+.privacy-modal-card{background:#fffef9;border:1px solid #c9d5c2;border-radius:20px;max-width:540px;width:100%;box-shadow:0 16px 45px rgba(0,0,0,0.2);overflow:hidden;animation:modalIn .2s ease-out}
+@keyframes modalIn{from{opacity:0;transform:scale(0.96)}to{opacity:1;transform:scale(1)}}
+.privacy-modal-header{display:flex;justify-content:space-between;align-items:center;padding:20px 24px;border-bottom:1px solid #e5ede0}
+.privacy-modal-header h3{margin:0;font-size:16px;font-weight:700;color:#1e352b}
+.close-btn{background:transparent;border:none;font-size:16px;color:#677d6f;cursor:pointer;padding:4px 8px;border-radius:6px}
+.close-btn:hover{background:#edf3e8;color:#1e352b}
+.privacy-modal-body{padding:20px 24px;font-size:12.5px;color:#385243;line-height:1.6;display:flex;flex-direction:column;gap:12px;max-height:65vh;overflow-y:auto}
+.privacy-modal-body strong{color:#1a3225}
+.privacy-modal-footer{padding:14px 24px;background:#f8fbf5;border-top:1px solid #e5ede0;display:flex;justify-content:flex-end}
+.privacy-modal-footer button{border-radius:10px;padding:10px 20px;font-size:12px;min-height:38px}
+
 @media(max-width:540px){
   .milestones-grid{grid-template-columns:1fr}
 }
+
