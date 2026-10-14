@@ -3,9 +3,9 @@
 import {useState} from 'react';
 import {calculateMilestones, WEEKLY_CHALLENGE} from '../lib/gamification.cjs';
 
-export default function GamificationPanel({entries = []}) {
+export default function GamificationPanel({entries = [], habits = [], practices = []}) {
   const [enabled, setEnabled] = useState(true);
-  const milestones = calculateMilestones(entries);
+  const milestones = calculateMilestones(entries, habits, practices);
   const unlockedCount = milestones.filter(m => m.unlocked).length;
 
   if (!enabled) {

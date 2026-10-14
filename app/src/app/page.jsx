@@ -5,6 +5,8 @@ import AccountPanel from './AccountPanel';
 import LandingPage from './LandingPage';
 import OnboardingFlow from './OnboardingFlow';
 import GamificationPanel from './GamificationPanel';
+import HabitsHub from './HabitsHub';
+import AiMirror from './AiMirror';
 import {productClient} from '../lib/supabase';
 import {buildJournal} from '../lib/journal-record.cjs';
 
@@ -42,6 +44,8 @@ export default function Journal() {
   const [review,setReview]=useState(false);
   const [session,setSession]=useState(null);
   const [entries,setEntries]=useState([]);
+  const [habits,setHabits]=useState([]);
+  const [practices,setPractices]=useState([]);
   const [historyError,setHistoryError]=useState('');
   const [saveError,setSaveError]=useState('');
   const [saving,setSaving]=useState(false);
@@ -123,8 +127,45 @@ export default function Journal() {
 
     productClient().from('journal_entries').select('*').eq('owner_id',session.user.id).order('created_at',{ascending:false}).order('id',{ascending:false}).limit(20)
       .then(({data,error})=>{if(alive){if(error)setHistoryError('No se pudo recuperar el historial.');else setEntries(data);}});
+
+    // Cargar hábitos y prácticas del usuario
+    productClient().from('habits').select('*').eq('owner_id',session.user.id).order('created_at',{ascending:false})
+      .then(({data})=>{if(alive&&data)setHabits(data);});
+
+    productClient().from('habit_practices').select('*').eq('owner_id',session.user.id)
+      .then(({data})=>{if(alive&&data)setPractices(data);});
+
     return ()=>{alive=false;};
   },[session]);
+
+  const saveHabit = async (habitData) => {
+    if (!session) return;
+    const client = productClient();
+    const payload = {
+      ...habitData,
+      owner_id: session.user.id
+    };
+    const { data: inserted, error } = await client.from('habits').insert(payload).select().single();
+    if (error) throw error;
+    if (inserted) {
+      setHabits(prev => [inserted, ...prev]);
+    }
+  };
+
+  const recordPractice = async (habitId) => {
+    if (!session) return;
+    const client = productClient();
+    const today = new Date().toISOString().split('T')[0];
+    const payload = {
+      habit_id: habitId,
+      owner_id: session.user.id,
+      practiced_at: today
+    };
+    const { data: inserted, error } = await client.from('habit_practices').upsert(payload).select().single();
+    if (!error && inserted) {
+      setPractices(prev => [...prev.filter(p => !(p.habit_id === habitId && p.practiced_at === today)), inserted]);
+    }
+  };
   const titleRef=useRef(null);
   const setField=(field,value)=>setData(previous=>({...previous,[field]:value}));
   const go=(next)=>{setStep(next);requestAnimationFrame(()=>titleRef.current?.focus());};
@@ -184,6 +225,13 @@ export default function Journal() {
         </button>
         <button
           type="button"
+          className={`nav-btn ${view==='habits'?'active':''}`}
+          onClick={()=>setView('habits')}
+        >
+          🔄 Hábitos Poderosos
+        </button>
+        <button
+          type="button"
           className={`nav-btn ${view==='journal'?'active':''}`}
           onClick={()=>setView('journal')}
         >
@@ -203,11 +251,23 @@ export default function Journal() {
         onSkip={()=>setView('journal')}
         session={session}
       />
+    ) : view==='habits' ? (
+      <>
+        <AccountPanel onSession={receiveSession}/>
+        <HabitsHub
+          habits={habits}
+          practices={practices}
+          onSaveHabit={saveHabit}
+          onRecordPractice={recordPractice}
+          onGoToJournal={()=>setView('journal')}
+          session={session}
+        />
+      </>
     ) : (
       <>
         <div className="intro"><p className="eyebrow">UN MOMENTO PARA TI</p><h1>Haz una pausa.<br/><span>Encuentra tu centro.</span></h1><p>Observa lo que pasó y elige cómo quieres responder.</p></div>
         <AccountPanel onSession={receiveSession}/>
-        <GamificationPanel entries={entries}/>
+        <GamificationPanel entries={entries} habits={habits} practices={practices}/>
         <section className="journal" aria-label="Registro guiado">
           <div className="progress-header"><span>Registro del momento</span><span>{review?'Revisión':`Paso ${step} de 3`}</span></div>
           <ol className="steps" aria-label="Progreso">{['Observar','Reconocer','Responder'].map((label,index)=><li key={label} aria-current={!review&&step===index+1?'step':undefined} className={step>=index+1?'reached':''}><span>{index+1}</span>{label}</li>)}</ol>
@@ -215,6 +275,7 @@ export default function Journal() {
             {review?<>
               <p className="eyebrow">TU RESPUESTA, CON CLARIDAD</p><h2 ref={titleRef} tabIndex={-1}>{saved?'Reflexión guardada':'Revisa tu reflexión'}</h2><p className="hint" role="status">{saved?'Tu registro está guardado en tu bitácora privada.':session?'Todavía no está guardado. Revisa los datos antes de confirmar.':'Este borrador aún no está guardado. Accede por correo para habilitar el guardado.'}</p>
               <dl className="review"><div><dt>Detonante</dt><dd>{data.context}</dd></div><div><dt>Energía percibida</dt><dd>{data.battery}%</dd></div><div><dt>Nivel de Reactividad</dt><dd>{selectedReaction?.label}</dd></div><div><dt>Filtro de Sesgo</dt><dd>{selectedBias?.label}</dd></div><div><dt>Foco de Desequilibrio</dt><dd>{data.tags.length?tags.filter(([id])=>data.tags.includes(id)).map(([,label])=>label).join(' · '):'Sin etiquetas seleccionadas'}</dd></div>{phases.map(([field,label])=><div key={field}><dt>{label}</dt><dd>{data[field]}</dd></div>)}{data.learning.trim()&&<div><dt>Integración y Crecimiento</dt><dd>{data.learning}</dd></div>}</dl>
+              <AiMirror data={data} onAdoptLearning={(val)=>setField('learning',val)}/>
               {saveError&&<p role="alert" className="hint">{saveError}</p>}
               <div className="actions">{saved?<button className="primary" type="button" onClick={()=>{setData(empty());setSaved(false);setReview(false);recordId.current=null;setSaveError('');go(1);}}>Nuevo registro</button>:<><button type="button" className="secondary" disabled={saving} onClick={()=>{setReview(false);go(3);}}>Seguir editando</button><button type="button" className="primary" disabled={!session||saving} onClick={save}>{saving?'Guardando…':'Guardar registro'}</button></>}</div>
             </>:<form onSubmit={advance}>

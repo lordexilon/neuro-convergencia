@@ -29,5 +29,9 @@ export const metadata = {
 };
 
 export default function Layout({children}) {
-  return <html lang="es"><body>{children}</body></html>;
+  return (
+    <html lang="es" suppressHydrationWarning>
+      <body suppressHydrationWarning>{children}</body>
+    </html>
+  );
 }
