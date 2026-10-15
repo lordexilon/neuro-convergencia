@@ -6,7 +6,8 @@
     "dev": "next dev --webpack --hostname 127.0.0.1 --port 3108",
     "build": "next build --webpack",
     "start": "next start --hostname 127.0.0.1 --port 3108",
-    "test": "node --test tests/journal-record.test.cjs tests/gamification.test.cjs tests/ai-mentor.test.cjs"
+    "test": "node --test tests/journal-record.test.cjs tests/gamification.test.cjs tests/ai-mentor.test.cjs tests/pilot-application.test.cjs tests/ai-privacy.test.cjs tests/ai-request.test.cjs tests/pilot-metrics.test.cjs tests/product-session.test.cjs tests/inline-format.test.cjs",
+    "pilot:report": "node scripts/pilot-report.cjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "2.116.0",

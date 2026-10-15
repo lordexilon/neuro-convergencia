@@ -1,5 +1,7 @@
 'use client';
 
+import InlineText from './InlineText';
+
 import { useState } from 'react';
 import Image from 'next/image';
 import { HABIT_MODULES, cleanCitations } from '../lib/habitsContent';
@@ -151,7 +153,7 @@ export default function HabitsHub({
                         {cleanCitations(section.content)
                           .split('\n\n')
                           .map((para, i) => (
-                            <p key={i}>{para}</p>
+                            <p key={i}><InlineText text={para}/></p>
                           ))}
                       </div>
                     </div>

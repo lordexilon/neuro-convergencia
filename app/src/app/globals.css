@@ -1151,3 +1151,49 @@
   color: #617769;
 }
 
+
+/* UX: practice first, responsive navigation and native modal dialogs. */
+html{scrollbar-gutter:stable}
+.intro{padding:24px 0 16px}
+.intro .eyebrow{margin-bottom:8px}
+.intro>p:last-child{margin-top:10px}
+.journal-access-note{max-width:580px;margin:0 auto 14px;color:#526c5c;font-size:13px}
+.email-help{margin-top:12px;font-size:13px;color:#4b6555}
+.email-help summary,.pilot-data-details summary{cursor:pointer;min-height:36px;display:flex;align-items:center;text-decoration:underline}
+.email-help p{margin-top:8px}
+.app-dialog{position:fixed;inset:0;margin:0;width:100%;height:100%;max-width:none;max-height:none;border:0;padding:20px;background:transparent;overflow:hidden;color:#233a32}
+.app-dialog[open]{display:grid;place-items:center}
+.app-dialog::backdrop{background:rgba(20,35,26,.6);backdrop-filter:blur(3px)}
+.app-dialog .close-btn{min-width:44px;min-height:44px;flex-shrink:0;display:grid;place-items:center}
+.app-dialog .pilot-modal-card{max-height:calc(100dvh - 40px);padding:24px;overscroll-behavior:contain}
+.pilot-modal-card>.close-btn{float:right;margin:-8px -8px 0 8px}
+.pilot-modal-header{clear:none}
+.pilot-modal-header h2{clear:both;margin:12px 0;font-size:24px}
+.pilot-modal-header .pilot-subtitle{margin-bottom:16px;font-size:14px}
+.pilot-modal-card .role-selector{gap:8px;margin:8px 0 16px}
+.pilot-modal-card .role-option{min-height:64px;padding:10px;display:flex;flex-direction:row;align-items:center;justify-content:center;gap:6px}
+.pilot-modal-card .form-group{margin-bottom:12px}
+.pilot-modal-card .pilot-input{min-height:44px;font-size:16px}
+.pilot-modal-card .form-label{font-size:14px;line-height:1.5}
+.pilot-modal-card label:has(input[type=checkbox]){display:flex;gap:10px;align-items:flex-start;margin:12px 0}
+.pilot-modal-card input[type=checkbox]{flex-shrink:0;margin-top:4px}
+.pilot-data-details{font-size:13px;color:#4b6555;margin:8px 0}
+.pilot-data-details p{margin:8px 0}
+.pilot-actions{margin-top:16px}
+.app-dialog .privacy-modal-card{max-height:calc(100dvh - 40px);display:flex;flex-direction:column}
+.app-dialog .privacy-modal-body{min-height:0;max-height:none;overflow:auto;overscroll-behavior:contain;font-size:14px}
+.app-dialog .privacy-modal-header,.app-dialog .privacy-modal-footer{flex-shrink:0}
+.app-dialog .privacy-modal-footer button{min-height:44px}
+@media(max-width:640px){
+  .nav-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));width:100%;gap:8px}
+  .nav-actions .nav-btn{width:100%;min-width:0;min-height:48px;height:100%;padding:10px 8px;white-space:normal;overflow-wrap:anywhere;line-height:1.35}
+  .nav-bar{align-items:stretch}
+  .nav-brand{align-self:flex-start}
+  .intro h1{font-size:32px}
+  .content{padding:20px}
+  .account input{min-width:0;font-size:16px}
+  .app-dialog{padding:12px}
+  .app-dialog .pilot-modal-card{padding:20px;max-height:calc(100dvh - 24px)}
+  .app-dialog .privacy-modal-card{max-height:calc(100dvh - 24px)}
+  .privacy-modal-header,.privacy-modal-body,.privacy-modal-footer{padding:16px}
+}

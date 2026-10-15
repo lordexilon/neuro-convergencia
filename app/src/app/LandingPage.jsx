@@ -206,7 +206,7 @@ const protocolSteps = [
   }
 ];
 
-export default function LandingPage({onGoToJournal, onStartOnboarding}) {
+export default function LandingPage({onGoToJournal, onStartOnboarding, signedIn = false}) {
   const [selectedLayer, setSelectedLayer] = useState('temperamento');
   const [selectedSefira, setSelectedSefira] = useState('tiferet');
   const [selectedPolarity, setSelectedPolarity] = useState('activo');
@@ -229,21 +229,16 @@ export default function LandingPage({onGoToJournal, onStartOnboarding}) {
           El Mapa del <span>Neurocomportamiento</span>
         </h1>
         <p className="hero-subtitle">
-          Una micro-tecnología de autoconocimiento reflexivo. Revisa una reacción cotidiana en menos de 2 minutos, distingue hechos objetivos de interpretaciones y elige tu respuesta con serenidad consciente.
+          Una bitácora de autoconocimiento para observar una reacción cotidiana, distinguir hechos de interpretaciones y elegir cómo responder. La duración y utilidad de la práctica se evaluarán durante el piloto.
         </p>
 
+        {signedIn ? <p className="hint">Mapa y metodología para consultar cuando lo necesites. Puedes continuar tu práctica desde Bitácora.</p> : (
         <div className="hero-cta-group">
-          <button type="button" className="cta-button primary-cta" onClick={onStartOnboarding}>
-            <span>Iniciar Onboarding Interactivo</span>
-            <span aria-hidden="true">→</span>
-          </button>
-          <button type="button" className="cta-button secondary-cta" onClick={onGoToJournal}>
-            <span>Abrir Bitácora de Reflexión</span>
-          </button>
-          <button type="button" className="cta-button pilot-cta" onClick={() => setShowPilotModal(true)}>
-            <span>🎯 Unirme al Piloto 21 Días</span>
-          </button>
+          <button type="button" className="cta-button primary-cta" onClick={onGoToJournal}>Escribir una reflexión</button>
+          <button type="button" className="cta-button secondary-cta" onClick={onStartOnboarding}>Conocer la práctica</button>
+          <button type="button" className="text-link" onClick={() => setShowPilotModal(true)}>Consultar el piloto gratuito</button>
         </div>
+        )}
 
         <VideoPromo />
       </section>
@@ -530,13 +525,22 @@ export default function LandingPage({onGoToJournal, onStartOnboarding}) {
       </section>
 
       {/* Piloto de 21 Días Banner de Conversión */}
+      {signedIn ? (
+        <section className="landing-section" aria-label="Información del piloto">
+          <h2>Convocatoria al piloto</h2>
+          <p>La cuenta de la bitácora y la inscripción al piloto son independientes. Consulta las condiciones si te interesa participar; el equipo debe confirmar tu cupo.</p>
+          <button type="button" className="text-link" onClick={() => setShowPilotModal(true)}>Consultar convocatoria</button>
+        </section>
+      ) : (
       <section className="pilot-banner-section" aria-label="Convocatoria al Piloto de 21 Días">
         <div className="pilot-banner-inner">
-          <div className="pilot-banner-badge">CONVOCATORIA ABIERTA · COHORTE 1</div>
-          <h2>Aplica el Método durante 21 Días</h2>
+          <div className="pilot-banner-badge">PILOTO GRATUITO · 21 DÍAS</div>
+          <h2>Practica y evalúa la bitácora durante 21 días</h2>
           <p>
-            Buscamos 20 personas y facilitadores para transformar patrones reactivos en respuestas conscientes. Acceso gratuito guiado con herramientas pedagógicas y soporte personalizado.
+            Proponemos una cohorte de hasta 20 participantes con un facilitador. El acceso durante los 21 días será gratuito, sin tarjeta ni renovación automática. Postularte no reserva un cupo: el equipo confirmará disponibilidad, acompañamiento y fecha de inicio por correo.
           </p>
+          <p>El piloto incluye onboarding, bitácora y práctica de hábitos. La IA externa es opcional y está sujeta a disponibilidad y cuota. No incluye panel de facilitador, exportaciones ni una suscripción Pro. Cualquier continuidad de pago se propondrá por separado después del piloto.</p>
+          <p>La evaluación de uso requerirá una autorización adicional y usará fechas de guardado, sin leer tus reflexiones. No ofrecemos diagnóstico ni prometemos resultados clínicos.</p>
           <div className="pilot-banner-ctas">
             <button type="button" className="cta-button primary-cta" onClick={() => setShowPilotModal(true)}>
               <span>Postularme como Participante o Facilitador</span>
@@ -546,23 +550,25 @@ export default function LandingPage({onGoToJournal, onStartOnboarding}) {
         </div>
       </section>
 
+      )}
+
       {/* Bottom Conversion Section */}
-      <section className="landing-footer-cta" aria-label="Llamado a la acción">
+      {!signedIn && <section className="landing-footer-cta" aria-label="Llamado a la acción">
         <p className="eyebrow">EMPIEZA HOY</p>
-        <h2>Conecta con tu centro en menos de dos minutos</h2>
+        <h2>Haz una pausa y observa tu respuesta</h2>
         <p>
           Registra tus reflexiones en tu bitácora personal privada o realiza el onboarding guiado para descubrir tu perfil.
         </p>
         <div className="hero-cta-group">
           <button type="button" className="cta-button primary-cta" onClick={onStartOnboarding}>
-            <span>Realizar Onboarding Guiado</span>
+            <span>Ver introducción guiada</span>
             <span aria-hidden="true">→</span>
           </button>
           <button type="button" className="cta-button secondary-cta" onClick={onGoToJournal}>
             <span>Abrir Bitácora Privada</span>
           </button>
         </div>
-      </section>
+      </section>}
 
       {/* Modal de Convocatoria */}
       <PilotModal isOpen={showPilotModal} onClose={() => setShowPilotModal(false)} />

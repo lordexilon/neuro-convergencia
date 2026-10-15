@@ -4,7 +4,7 @@ import {useState} from 'react';
 import {calculateMilestones, WEEKLY_CHALLENGE} from '../lib/gamification.cjs';
 
 export default function GamificationPanel({entries = [], habits = [], practices = []}) {
-  const [enabled, setEnabled] = useState(true);
+  const [enabled, setEnabled] = useState(false);
   const milestones = calculateMilestones(entries, habits, practices);
   const unlockedCount = milestones.filter(m => m.unlocked).length;
 
@@ -14,6 +14,7 @@ export default function GamificationPanel({entries = [], habits = [], practices 
         <button
           type="button"
           className="gamification-toggle-btn"
+          aria-expanded={false}
           onClick={() => setEnabled(true)}
         >
           <span>🌱 Hitos de Consciencia ({unlockedCount}/{milestones.length})</span>
@@ -36,6 +37,7 @@ export default function GamificationPanel({entries = [], habits = [], practices 
           onClick={() => setEnabled(false)}
           title="Ocultar panel de hitos"
           aria-label="Ocultar panel de hitos"
+          aria-expanded={true}
         >
           Ocultar
         </button>

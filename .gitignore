@@ -12,3 +12,4 @@
 **/*.log
 **/*.pem
 **/*.key
+**/pilot-cohort.local.json

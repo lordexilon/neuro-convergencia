@@ -1,6 +1,7 @@
 'use client';
 
-import {useState} from 'react';
+import {useEffect, useRef, useState} from 'react';
+import AccountPanel from './AccountPanel';
 import {productClient} from '../lib/supabase';
 
 const mockScenarios = [
@@ -13,75 +14,39 @@ const mockScenarios = [
   }
 ];
 
-export default function OnboardingFlow({onComplete, onSkip, session}) {
+export default function OnboardingFlow({onComplete, onSkip, session, configured}) {
   const [step, setStep] = useState(1);
   const [energyLevel, setEnergyLevel] = useState(50);
   const [polarity, setPolarity] = useState('activo');
   const [observedLayer, setObservedLayer] = useState('');
   const [practicePhase, setPracticePhase] = useState(1);
-  const [email, setEmail] = useState('');
   const [sendingLink, setSendingLink] = useState(false);
   const [authMessage, setAuthMessage] = useState('');
   const [linkSent, setLinkSent] = useState(false);
-  const [savedProfile, setSavedProfile] = useState(false);
 
   const scenario = mockScenarios[0];
 
-  // Save profile to Supabase if authenticated
-  async function persistProfile(userId) {
-    try {
-      const client = productClient();
-      if (!client || !userId) return;
-      await client.from('user_profiles').upsert({
-        id: userId,
-        initial_battery: energyLevel,
-        polarity,
-        primary_layer: observedLayer || null,
-        onboarding_completed: true,
-        updated_at: new Date().toISOString()
-      });
-      setSavedProfile(true);
-    } catch {
-      // Non-blocking fallback
-    }
+  const contentRef = useRef(null);
+  useEffect(() => {contentRef.current?.querySelector('h2')?.focus();}, [step]);
+  function pendingProfile() {
+    return {initial_battery: energyLevel, polarity, primary_layer: observedLayer || null};
   }
-
-  async function handleRegister(e) {
-    e.preventDefault();
-    if (!email.trim() || sendingLink) return;
-    setSendingLink(true);
-    setAuthMessage('');
+  function storePendingProfile() {
+    localStorage.setItem('neuro_onboarding_temp', JSON.stringify({...pendingProfile(), date: new Date().toISOString()}));
+  }
+  async function handleRegister(event) {
+    event.preventDefault();
+    if (!session?.user?.id || sendingLink) return;
+    setSendingLink(true); setAuthMessage('');
     try {
-      if (typeof window !== 'undefined') {
-        localStorage.setItem('neuro_onboarding_temp', JSON.stringify({
-          initial_battery: energyLevel,
-          polarity,
-          primary_layer: observedLayer,
-          date: new Date().toISOString()
-        }));
-      }
-
-      if (session?.user?.id) {
-        await persistProfile(session.user.id);
-        setAuthMessage('¡Perfil guardado correctamente en tu cuenta!');
-        setLinkSent(true);
-        return;
-      }
-
       const client = productClient();
-      if (!client) throw new Error('Servicio de autenticación no disponible.');
-      const {error} = await client.auth.signInWithOtp({
-        email: email.trim(),
-        options: {emailRedirectTo: window.location.origin + '/'}
-      });
-      if (error) throw error;
-      setLinkSent(true);
-      setAuthMessage('¡Enlace enviado! Revisa tu bandeja de entrada para acceder directamente a tu bitácora privada.');
-    } catch {
-      setAuthMessage('No pudimos enviar el enlace en este momento. Puedes continuar explorando la bitácora directamente.');
-    } finally {
-      setSendingLink(false);
-    }
+      if (!client) throw new Error('Acceso no disponible.');
+      const {error} = await client.from('user_profiles').upsert({id: session.user.id, ...pendingProfile(), onboarding_completed: true, updated_at: new Date().toISOString()});
+      if (error) throw new Error('No se pudo confirmar el perfil. Puedes reintentar.');
+      try {localStorage.removeItem('neuro_onboarding_temp');} catch {}
+      setLinkSent(true); setAuthMessage('Perfil guardado en tu cuenta.');
+    } catch (error) {setAuthMessage(error.message || 'No se pudo guardar el perfil.');}
+    finally {setSendingLink(false);}
   }
 
   return (
@@ -102,12 +67,12 @@ export default function OnboardingFlow({onComplete, onSkip, session}) {
         </button>
       </div>
 
-      <div className="onboarding-body">
+      <div className="onboarding-body" ref={contentRef}>
         {/* Step 1: Batería y Polaridad */}
         {step === 1 && (
           <div className="onboarding-step-view">
             <p className="eyebrow">PASO 1 · TU ENERGÍA DE ORIGEN</p>
-            <h2>¿Cómo sientes tu batería y ritmo vital hoy?</h2>
+            <h2 tabIndex={-1}>¿Cómo sientes tu batería y ritmo vital hoy?</h2>
             <p className="hint">
               Antes de actuar o reflexionar, el primer paso es calibrar cuánta energía tienes disponible.
             </p>
@@ -178,7 +143,7 @@ export default function OnboardingFlow({onComplete, onSkip, session}) {
         {step === 2 && (
           <div className="onboarding-step-view">
             <p className="eyebrow">PASO 2 · ESTRUCTURA DEL SER</p>
-            <h2>Imagina este detonante cotidiano</h2>
+            <h2 tabIndex={-1}>Imagina este detonante cotidiano</h2>
             <div className="scenario-box">
               <span className="scenario-tag">Situación de ejemplo</span>
               <p>«{scenario.title}»</p>
@@ -249,7 +214,7 @@ export default function OnboardingFlow({onComplete, onSkip, session}) {
         {step === 3 && (
           <div className="onboarding-step-view">
             <p className="eyebrow">PASO 3 · EL PROTOCOLO DE 3 PASOS</p>
-            <h2>Experimenta la Autorregulación Consciente</h2>
+            <h2 tabIndex={-1}>Experimenta la Autorregulación Consciente</h2>
             <p className="hint">
               Sigue la secuencia práctica para calmar el impulso y encontrar tu centro:
             </p>
@@ -261,7 +226,7 @@ export default function OnboardingFlow({onComplete, onSkip, session}) {
                     key={tab}
                     type="button"
                     className={`practice-tab ${practicePhase === idx + 1 ? 'active' : ''}`}
-                    onClick={() => setPracticePhase(idx + 1)}
+                    aria-pressed={practicePhase === idx + 1} onClick={() => setPracticePhase(idx + 1)}
                   >
                     {tab}
                   </button>
@@ -325,9 +290,9 @@ export default function OnboardingFlow({onComplete, onSkip, session}) {
         {step === 4 && (
           <div className="onboarding-step-view">
             <p className="eyebrow">PASO 4 · REGISTRO Y BITÁCORA</p>
-            <h2>Tu Síntesis de Consciencia</h2>
+            <h2 tabIndex={-1}>Tu Síntesis de Consciencia</h2>
             <p className="hint">
-              Has completado el mapa introductorio. Guarda tu cuenta para acceder a tu Bitácora privada permanente.
+              Has completado la introducción. Accede por correo para guardar tus reflexiones en tu cuenta.
             </p>
 
             <div className="onboarding-summary-card">
@@ -353,7 +318,7 @@ export default function OnboardingFlow({onComplete, onSkip, session}) {
             <div className="onboarding-auth-box">
               <h3>{session ? 'Vincular a tu cuenta activa' : 'Crea o accede a tu cuenta privada'}</h3>
               <p className="auth-note">
-                {session ? `Sesión iniciada como: ${session.user.email}` : 'Acceso seguro por enlace de correo, sin contraseñas que recordar.'}
+                {session ? `Sesión iniciada como: ${session.user.email}` : 'Acceso por código de correo, sin contraseña.'}
               </p>
 
               {linkSent ? (
@@ -373,25 +338,9 @@ export default function OnboardingFlow({onComplete, onSkip, session}) {
                   </button>
                 </div>
               ) : (
-                <form onSubmit={handleRegister} className="onboarding-email-form">
-                  <label htmlFor="onb-email">Ingresa tu correo electrónico</label>
-                  <div className="email-input-row">
-                    <input
-                      id="onb-email"
-                      type="email"
-                      required
-                      autoComplete="email"
-                      value={email}
-                      onChange={e => setEmail(e.target.value)}
-                      placeholder="nombre@ejemplo.com"
-                    />
-                    <button type="submit" className="primary" disabled={sendingLink}>
-                      {sendingLink ? 'Enviando…' : 'Recibir enlace'}
-                    </button>
-                  </div>
-                  {authMessage && <p className="hint" role="status">{authMessage}</p>}
-                </form>
+                <AccountPanel session={session} configured={configured} beforeRequest={storePendingProfile}/>
               )}
+              {session&&authMessage&&!linkSent&&<p className="hint" role="alert">{authMessage}</p>}
             </div>
 
             <div className="actions">
@@ -399,7 +348,7 @@ export default function OnboardingFlow({onComplete, onSkip, session}) {
                 Atrás
               </button>
               <button type="button" className="secondary" onClick={onComplete}>
-                Explorar Bitácora como Invitado
+                {session?'Volver a la Bitácora':'Explorar Bitácora como Invitado'}
               </button>
             </div>
           </div>
